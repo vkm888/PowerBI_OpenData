@@ -1,14 +1,13 @@
 # PowerBI_OpenData
 PowerBI звіти налаштовані на отримання даних з OpenData
 
-## НБУ курс валют.pbix
+## NBU_exchange_rate.pbix
 📊 **звіт Power BI для моніторингу курсів валют НБУ**
 аналіз валютних трендів (USD/EUR) у стилі Google Finance. Дашборд автоматизує збір даних та візуалізує динаміку за різні періоди.
 
-[НБУ курс валют.pdf](/img/НБУ%20курс%20валют.pdf)
 
 <p align="center">
-  <img src="/img/Screenshot 2026-04-11.png" width="600" title="НБУ курс валют.pbix">
+  <img src="/img/nbu_exchange_rate.png" width="600" title="NBU_exchange_rate.pbix">
   <br>
 </p>
 
@@ -26,34 +25,42 @@ link на дані в форматі JSON - https://bank.gov.ua/NBU_Exchange/exc
 
 ```powerquery
 let
-    // 1. Формуємо дати у форматі yyyyMMdd
+    // 1. СТАТИЧНИЙ КРОК ДЛЯ POWER BI SERVICE
+    // Ми просто оголошуємо базовий URL як константу
+    BaseUrl = "https://bank.gov.ua/NBU_Exchange/exchange_site",
+
+    // 2. Формуємо дати
     CurrentDate = DateTime.ToText(DateTime.LocalNow(), "yyyyMMdd"),
     StartOfYear = Date.ToText(#date(2021, 1, 1), "yyyyMMdd"),
     
-    // 2. Функція для отримання даних
+    // 3. Функція з використанням RelativePath (тепер вона посилається на статичний BaseUrl)
     GetCurrencyData = (vCode as text) =>
         let
-            Url = "https://bank.gov.ua/NBU_Exchange/exchange_site?valcode=" & vCode & "&start=" & StartOfYear & "&end=" & CurrentDate & "&json",
-            Source = Json.Document(Web.Contents(Url))
+            Source = Json.Document(Web.Contents(
+                BaseUrl, 
+                [
+                    Query = [
+                        valcode = vCode,
+                        start = StartOfYear,
+                        end = CurrentDate,
+                        json = ""
+                    ]
+                ]
+            ))
         in
             Source,
-            
-    // 3. Отримуємо дані для USD та EUR
+
+    // 4. Отримуємо дані
     USD = GetCurrencyData("usd"),
     EUR = GetCurrencyData("eur"),
     
-    // 4. Об'єднуємо результати
+    // 5. Об'єднуємо та обробляємо
     CombinedList = List.Combine({USD, EUR}),
-    
-    // 5. Перетворюємо список записів на таблицю
     Table = Table.FromList(CombinedList, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
-    
-    // 6. Розгортаємо колонки
     ExpandedTable = Table.ExpandRecordColumn(Table, "Column1", 
         {"exchangedate", "rate", "cc", "txt"}, 
         {"Дата", "Курс", "Код", "Назва"}),
 
-    // 7. Налаштовуємо типи даних
     FinalTable = Table.TransformColumnTypes(ExpandedTable, {
         {"Дата", type date}, 
         {"Курс", type number}, 
