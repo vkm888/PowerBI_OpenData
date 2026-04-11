@@ -19,6 +19,8 @@ PowerBI звіти налаштовані на отримання даних з 
 
 API для розробників - https://bank.gov.ua/ua/open-data/api-dev
 
+link на дані в форматі JSON - https://bank.gov.ua/NBU_Exchange/exchange_site?valcode=usd&start=20260407&end=20260411&json
+
 ### Power Query (M Language):
 Для отримання даних використовується пряме підключення до API НБУ. Приклад коду для завантаження історії:
 
